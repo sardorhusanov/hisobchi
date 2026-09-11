@@ -5,7 +5,9 @@ def earned_salary(monthly_salary: int, divisor: int, attendance_units: Decimal) 
     return int(Decimal(monthly_salary) / divisor * attendance_units)
 
 
-def distributable_profit(income: int, project_expenses: int, general_expenses: int, payroll: int) -> int:
+def distributable_profit(
+    income: int, project_expenses: int, general_expenses: int, payroll: int
+) -> int:
     return income - project_expenses - general_expenses - payroll
 
 

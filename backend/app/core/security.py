@@ -5,7 +5,6 @@ import time
 from urllib.parse import parse_qsl
 
 import jwt
-
 from app.core.config import Settings
 
 
@@ -13,7 +12,15 @@ class TelegramInitDataError(ValueError):
     pass
 
 
-def validate_telegram_init_data(init_data: str, settings: Settings, now: int | None = None) -> dict[str, object]:
+class AccessTokenError(ValueError):
+    pass
+
+
+def validate_telegram_init_data(
+    init_data: str,
+    settings: Settings,
+    now: int | None = None,
+) -> dict[str, object]:
     values = dict(parse_qsl(init_data, keep_blank_values=True))
     received_hash = values.pop("hash", None)
     if not received_hash:
@@ -36,7 +43,19 @@ def validate_telegram_init_data(init_data: str, settings: Settings, now: int | N
 def create_access_token(telegram_user_id: int, settings: Settings, now: int | None = None) -> str:
     issued_at = int(time.time()) if now is None else now
     return jwt.encode(
-        {"sub": str(telegram_user_id), "iat": issued_at, "exp": issued_at + settings.access_token_minutes * 60},
+        {
+            "sub": str(telegram_user_id),
+            "iat": issued_at,
+            "exp": issued_at + settings.access_token_minutes * 60,
+        },
         settings.jwt_secret,
         algorithm="HS256",
     )
+
+
+def decode_access_token(token: str, settings: Settings) -> int:
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        return int(payload["sub"])
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError) as error:
+        raise AccessTokenError("Invalid access token") from error

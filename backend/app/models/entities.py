@@ -5,7 +5,18 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -22,9 +33,15 @@ class Role(StrEnum):
 
 
 class MemberType(StrEnum):
+    SUPER_ADMIN = "SUPER_ADMIN"
     WORKER = "WORKER"
     OWNER = "OWNER"
     PARTNER = "PARTNER"
+
+
+class EmploymentStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
 
 
 class ProjectStatus(StrEnum):
@@ -62,10 +79,21 @@ class Member(TimestampMixin, Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     full_name: Mapped[str] = mapped_column(String(255))
     member_type: Mapped[MemberType] = mapped_column(String(20))
+    role: Mapped[Role] = mapped_column(String(20), default=Role.WORKER, index=True)
+    phone_number: Mapped[str | None] = mapped_column(String(30))
+    telegram_user_id: Mapped[int | None] = mapped_column(unique=True, index=True)
+    employment_status: Mapped[EmploymentStatus] = mapped_column(
+        String(20), default=EmploymentStatus.ACTIVE, index=True
+    )
+    joined_on: Mapped[date] = mapped_column(Date, default=date.today)
+    ended_on: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str | None] = mapped_column(Text)
     user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"), unique=True)
     is_active: Mapped[bool] = mapped_column(default=True)
     user: Mapped[User | None] = relationship()
-    salary_history: Mapped[list[SalaryHistory]] = relationship(cascade="all, delete-orphan")
+    salary_history: Mapped[list[SalaryHistory]] = relationship(
+        cascade="all, delete-orphan", order_by="SalaryHistory.effective_from"
+    )
 
 
 class SalaryHistory(TimestampMixin, Base):
@@ -74,9 +102,10 @@ class SalaryHistory(TimestampMixin, Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     member_id: Mapped[UUID] = mapped_column(ForeignKey("members.id"), index=True)
-    monthly_salary_uzs: Mapped[int] = mapped_column(CheckConstraint("monthly_salary_uzs > 0"))
+    monthly_salary_uzs: Mapped[int] = mapped_column(CheckConstraint("monthly_salary_uzs >= 0"))
     effective_from: Mapped[date] = mapped_column(Date)
     effective_to: Mapped[date | None] = mapped_column(Date)
+    created_by_user_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
 
 
 class Project(TimestampMixin, Base):
@@ -101,21 +130,24 @@ class Attendance(TimestampMixin, Base):
     __tablename__ = "attendance"
     __table_args__ = (
         UniqueConstraint("member_id", "attendance_date"),
-        CheckConstraint("units IN (0.0, 0.5, 1.0)"),
+        CheckConstraint("units BETWEEN 0 AND 2"),
         Index("ix_attendance_date", "attendance_date"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     member_id: Mapped[UUID] = mapped_column(ForeignKey("members.id"), index=True)
     attendance_date: Mapped[date] = mapped_column(Date)
-    units: Mapped[Decimal] = mapped_column(Numeric(2, 1))
+    units: Mapped[int] = mapped_column(Integer, default=0)
     project_id: Mapped[UUID | None] = mapped_column(ForeignKey("projects.id"))
     note: Mapped[str | None] = mapped_column(Text)
 
 
 class FinancialTransaction(TimestampMixin, Base):
     __tablename__ = "financial_transactions"
-    __table_args__ = (CheckConstraint("amount_uzs > 0"), Index("ix_transactions_date", "transaction_date"))
+    __table_args__ = (
+        CheckConstraint("amount_uzs > 0"),
+        Index("ix_transactions_date", "transaction_date"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     transaction_type: Mapped[TransactionType] = mapped_column(String(30))
