@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from app.models.entities import EmploymentStatus, Member, MemberType, Role, SalaryHistory, User
+from app.services.audit import AuditService
 from app.services.authorization import require_member_management
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,6 +97,13 @@ class MemberService:
             member.user_id = await self._link_user(telegram_user_id, role)
         self.session.add(member)
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="member.created",
+            entity_type="member",
+            entity_id=member.id,
+            details={"role": role.value},
+        )
         return member
 
     async def update_member(self, *, actor: User, member_id: UUID, **changes: object) -> Member:
@@ -138,6 +146,13 @@ class MemberService:
         if telegram_user_id is None:
             member.user_id = None
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="member.updated",
+            entity_type="member",
+            entity_id=member.id,
+            details={"role": role.value, "employment_status": employment_status.value},
+        )
         return member
 
     async def deactivate_member(
@@ -156,6 +171,13 @@ class MemberService:
         member.is_active = False
         member.ended_on = end_date
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="member.deactivated",
+            entity_type="member",
+            entity_id=member.id,
+            details={"ended_on": end_date.isoformat()},
+        )
         return member
 
     async def link_telegram(self, *, actor: User, member_id: UUID, telegram_user_id: int) -> Member:
@@ -165,6 +187,13 @@ class MemberService:
         member.telegram_user_id = telegram_user_id
         member.user_id = await self._link_user(telegram_user_id, member.role)
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="member.telegram_linked",
+            entity_type="member",
+            entity_id=member.id,
+            details={"telegram_user_id": telegram_user_id},
+        )
         return member
 
     async def unlink_telegram(self, *, actor: User, member_id: UUID) -> Member:
@@ -173,6 +202,12 @@ class MemberService:
         member.telegram_user_id = None
         member.user_id = None
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="member.telegram_unlinked",
+            entity_type="member",
+            entity_id=member.id,
+        )
         return member
 
     async def create_salary(
@@ -219,6 +254,13 @@ class MemberService:
         )
         self.session.add(salary)
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="salary.created",
+            entity_type="salary_history",
+            entity_id=salary.id,
+            details={"member_id": str(member_id), "monthly_salary_uzs": monthly_salary_uzs},
+        )
         return salary
 
     async def salary_history(self, member_id: UUID) -> list[SalaryHistory]:

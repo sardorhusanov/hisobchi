@@ -58,6 +58,44 @@ Available API operations:
 
 The Mini App now includes the `Davomat` screen with per-worker daily attendance entry and a monthly summary.
 
+## Phase 4 features
+
+Projects and cash-flow tracking are available to authenticated super admins, owners, and partners for viewing. Super admins and owners can create or update projects, assign active members, and record income or expenses.
+
+Available API operations:
+
+- `GET/POST /api/v1/projects` lists and creates projects.
+- `PATCH /api/v1/projects/{project_id}` updates a project.
+- `GET/POST/DELETE /api/v1/projects/{project_id}/members/{member_id}` manages project assignments.
+- `GET/POST /api/v1/transactions` lists and records financial transactions.
+- `GET /api/v1/finance/summary?year=YYYY&month=MM` returns monthly income, expenses, and net cash flow.
+
+The Mini App includes the `Loyihalar` screen with project creation, monthly finance totals, and recent income entries.
+
+## Phase 5 features
+
+Monthly payroll can be finalized from attendance and the salary snapshot effective at the start of the month. Finalized payroll records can receive partial payments up to the earned amount. The monthly report combines income, expenses, payroll, and net profit.
+
+Available API operations:
+
+- `GET /api/v1/payroll?year=YYYY&month=MM` lists finalized payroll records.
+- `POST /api/v1/payroll/finalize?year=YYYY&month=MM` creates or refreshes monthly payroll snapshots.
+- `POST /api/v1/payroll/{payroll_id}/payments` records a payroll payment.
+- `GET /api/v1/reports/monthly?year=YYYY&month=MM` returns the monthly financial report.
+
+The Mini App includes the `Hisobotlar` screen with monthly totals and payroll finalization.
+
+## Phase 6 features
+
+Business mutations now create append-only audit events in the same transaction as the change. Audit history records the actor, action, entity, entity ID, timestamp, and structured details.
+
+Available API operations:
+
+- `GET /api/v1/audit` lists audit events for authorized users.
+- `GET /api/v1/audit?entity_type=member&action=member.created&limit=100` filters audit events.
+
+Audit history remains read-only through the API; audit rows are not updated or deleted by application services.
+
 ## Tests and checks
 
 ```bash
@@ -71,6 +109,6 @@ cd frontend && npm run build
 
 - PostgreSQL is the runtime database; SQLite is used only for fast unit tests.
 - Telegram Mini App `initData` is validated server-side with the bot token and produces a short-lived JWT.
-- Attendance, projects, financial transactions, payroll finalization, reports, and audit history remain planned for later phases.
+- Advanced audit export and retention policies remain planned for later phases.
 - The application timezone defaults to `Asia/Tashkent`; database timestamps are timezone-aware UTC values.
 - Profit distribution is still configured as 50/50 through environment settings and rejects any configuration that does not total 100%.

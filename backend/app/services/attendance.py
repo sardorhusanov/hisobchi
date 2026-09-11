@@ -7,6 +7,7 @@ from uuid import UUID
 
 from app.core.config import get_settings
 from app.models.entities import Attendance, EmploymentStatus, Member, SalaryHistory
+from app.services.audit import AuditService
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,6 +87,13 @@ class AttendanceService:
             record.units = normalized_units
             record.note = note
         await self.session.flush()
+        await AuditService(self.session).record(
+            actor=actor,
+            action="attendance.upserted",
+            entity_type="attendance",
+            entity_id=record.id,
+            details={"member_id": str(member_id), "units": normalized_units},
+        )
         return record
 
     async def month_summary(

@@ -1,8 +1,11 @@
 from typing import Annotated
 
 from app.api.attendance import router as attendance_router
+from app.api.audit import router as audit_router
 from app.api.dependencies import require_session
 from app.api.members import router as members_router
+from app.api.payroll import router as payroll_router
+from app.api.projects import router as projects_router
 from app.core.config import Settings, get_settings
 from app.core.security import (
     TelegramInitDataError,
@@ -18,6 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(prefix="/api/v1")
 router.include_router(members_router)
 router.include_router(attendance_router)
+router.include_router(audit_router)
+router.include_router(projects_router)
+router.include_router(payroll_router)
 
 
 class TelegramAuthRequest(BaseModel):

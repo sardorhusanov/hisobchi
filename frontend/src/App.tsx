@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { Attendance } from "./Attendance";
+import { Audit } from "./Audit";
 import { Members } from "./Members";
+import { Projects } from "./Projects";
+import { Reports } from "./Reports";
 
 const metrics = [
   ["Oy daromadi", "0 UZS", "income"],
@@ -18,6 +21,6 @@ function Placeholder({ title }: { title: string }) { return <main><p className="
 
 export function App() {
   const [active, setActive] = useState("Bosh sahifa");
-  const nav = [["⌂", "Bosh sahifa", "/"], ["♙", "A’zolar", "/members"], ["◷", "Davomat", "/attendance"], ["₸", "Hisobotlar", "/reports"]];
-  return <div className="app-shell"><header><div className="brand"><span className="brand-mark">H</span><span>hisobchi</span></div><button className="profile" aria-label="Profil">SA</button></header><Routes><Route path="/" element={<Dashboard />} /><Route path="/members" element={<Members />} /><Route path="/attendance" element={<Attendance />} /><Route path="*" element={<Placeholder title={active} />} /></Routes><nav>{nav.map(([icon, label, path]) => <NavLink key={label} to={path} onClick={() => setActive(label)} className={({ isActive }) => isActive ? "active" : ""}><span>{icon}</span><small>{label}</small></NavLink>)}</nav></div>;
+  const nav = [["⌂", "Bosh sahifa", "/"], ["♙", "A’zolar", "/members"], ["◷", "Davomat", "/attendance"], ["₸", "Loyihalar", "/projects"], ["▤", "Hisobotlar", "/reports"], ["◌", "Tarix", "/audit"]];
+  return <div className="app-shell"><header><div className="brand"><span className="brand-mark">H</span><span>hisobchi</span></div><button className="profile" aria-label="Profil">SA</button></header><Routes><Route path="/" element={<Dashboard />} /><Route path="/members" element={<Members />} /><Route path="/attendance" element={<Attendance />} /><Route path="/projects" element={<Projects />} /><Route path="/reports" element={<Reports />} /><Route path="/audit" element={<Audit />} /><Route path="*" element={<Placeholder title={active} />} /></Routes><nav>{nav.map(([icon, label, path]) => <NavLink key={label} to={path} onClick={() => setActive(label)} className={({ isActive }) => isActive ? "active" : ""}><span>{icon}</span><small>{label}</small></NavLink>)}</nav></div>;
 }
